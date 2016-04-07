@@ -5,6 +5,9 @@ package com.example.slim.parkme;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -14,15 +17,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.protocol.HTTP;
+
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -143,15 +138,17 @@ public class ControlLoginPass extends Activity{
 
 				Looper.prepare();
 				//Connexion au serveur.
-				DefaultHttpClient client = new DefaultHttpClient();
-				HttpConnectionParams.setConnectionTimeout(client.getParams(), 15000);
+				//DefaultHttpClient client = new DefaultHttpClient();
+				//HttpConnectionParams.setConnectionTimeout(client.getParams(), 15000);
 
-				HttpResponse response;
-				HttpEntity entite;
+				//HttpResponse response;
+				//HttpEntity entite;
+
+
 
 				try{
 					// On se connecte au serveur.
-					HttpPost post = new HttpPost(UPDATE_URL);
+					/*HttpPost post = new HttpPost(UPDATE_URL);
 					List<NameValuePair> loginPass = new ArrayList<NameValuePair>();
 					loginPass.add(new BasicNameValuePair("login", login));
 					loginPass.add(new BasicNameValuePair("password", passCryptee));
@@ -165,7 +162,12 @@ public class ControlLoginPass extends Activity{
 					lireDonnees(input);
 					input.close();
 					if (entite != null)
-						entite.consumeContent();
+						entite.consumeContent();*/
+					URL url = new URL(UPDATE_URL);
+					HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+					conn.setDoOutput(true);
+					OutputStream ops = conn.getOutputStream();
+
 				}
 				catch (Exception e){
 					progressDialog.dismiss();

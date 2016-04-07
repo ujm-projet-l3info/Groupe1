@@ -53,45 +53,22 @@ public class MapsActivity extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_maps);
+        setContentView(R.layout.activity_main);
         setUpMapIfNeeded();
 
-        search = (Button) findViewById(R.id.button);
-        recherche = (EditText) findViewById(R.id.editText);
+        //search = (Button) findViewById(R.id.button);
+        //recherche = (EditText) findViewById(R.id.editText);
         resources=this.getResources();
 
-        final String addresse = recherche.toString();
+//        final String addresse = recherche.toString();
         latLng=new LatLng(0,0);
 
         helpBuilder = new AlertDialog.Builder(this);
 
 
-
-        search.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                /*try {
-                    latLng = getLocationFromAddress(addresse);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-
-                helpBuilder.setTitle("Pop Up");
-                helpBuilder.setMessage("longitude :"+latLng.longitude+"\nlatitude : "+latLng.latitude);
-                helpBuilder.setPositiveButton("Ok",
-                        new DialogInterface.OnClickListener() {
-
-                            public void onClick(DialogInterface dialog, int which) {
-                                // Do nothing but close the dialog
-                            }
-                        });
-                // Remember, create doesn't show the dialog
-                helpDialog = helpBuilder.create();
-                helpDialog.show();*/
-            }
-        });
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
+
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
 
