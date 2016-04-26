@@ -27,18 +27,19 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 -- Création: Mar 01 Mars 2016 à 19:27
 --
 
-DROP TABLE IF EXISTS `Membre_parking`;
-CREATE TABLE IF NOT EXISTS `Membre_parking` (
-  `id` int(20) NOT NULL AUTO_INCREMENT,
-  `pseudo` varchar(50) NOT NULL,
-  `pass` varchar(50) NOT NULL,
-  `mail` varchar(100) NOT NULL,
-  `note` int(5) NOT NULL,
-  `commentaire` varchar(10000) CHARACTER SET utf8 NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `pseudo` (`pseudo`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='tables d''inscription pour les utilisations de l''application ' AUTO_INCREMENT=1 ;
+CREATE TABLE IF NOT EXISTS auth_table (
+  user_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  username varchar(20) NOT NULL DEFAULT '',
+  password varchar(32) NOT NULL DEFAULT '',
+  PRIMARY KEY  (user_id),
+  UNIQUE KEY username (username)
+) TYPE=InnoDB ;
 
+-- 
+-- Insertion Table `auth_table`
+-- 
+
+INSERT INTO auth_table (username, password) VALUES ('test', MD5('pass'));
 --
 -- Contenu de la table `Membre_parking`
 --
