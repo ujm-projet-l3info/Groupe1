@@ -8,11 +8,15 @@ import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.view.View;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -22,19 +26,25 @@ import android.widget.ImageButton;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.gson.JsonPrimitive;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
-public class MapsActivity extends FragmentActivity {
+public class MapsActivity extends FragmentActivity implements LocationListener{
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private Button search;
@@ -44,20 +54,48 @@ public class MapsActivity extends FragmentActivity {
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
-    AlertDialog helpDialog;
+    /**
+     * Latitude longitude position courante
+     */
     LatLng latLng;
+
     AlertDialog.Builder helpBuilder;
     ParseurJson parseur;
     Resources resources;
+    AutoCompleteTextView autoComp;
+    /**
+     * Boutton pour signaler une place
+     */
+    FloatingActionButton signPlace;
+
+    /**
+     * Listes des places
+     */
+    ListPlaces listPlaces;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        listPlaces = new ListPlaces();
+
         setUpMapIfNeeded();
 
         //search = (Button) findViewById(R.id.button);
         //recherche = (EditText) findViewById(R.id.editText);
+        signPlace =(FloatingActionButton) findViewById(R.id.fab);
+
+
+
+        signPlace.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                listPlaces.add(new Place(latLng,1));
+                listPlaces.draw(mMap);
+            }
+        });
         resources=this.getResources();
 
 //        final String addresse = recherche.toString();
@@ -70,6 +108,10 @@ public class MapsActivity extends FragmentActivity {
         // See https://g.co/AppIndexing/AndroidStudio for more information.
 
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+        autoComp = (AutoCompleteTextView) findViewById(R.id.autoComp);
+
+        //autoComp.setAdapter(new PlacesAutoCompleteAdapter(this, android.R.layout.simple_dropdown_item_1line));
 
 
     }
@@ -100,6 +142,7 @@ public class MapsActivity extends FragmentActivity {
      */
     private void setUpMapIfNeeded() {
         // Do a null check to confirm that we have not already instantiated the map.
+
         if (mMap == null) {
             // Try to obtain the map from the SupportMapFragment.
             mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map))
@@ -108,30 +151,34 @@ public class MapsActivity extends FragmentActivity {
             mMap.setMyLocationEnabled(true);
             // Check if we were successful in obtaining the map.
             if (mMap != null) {
+                mMap.setTrafficEnabled(true);
+                //mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
                 setUpMap();
+
             }
         }
     }
 
     /**
-     * This is where we can add markers or lines, add listeners or move the camera. In this case, we
-     * just add a marker near Africa.
+     * This is where we can add markers or lines, add listeners or move the camera.
      * <p/>
      * This should only be called once and when we are sure that {@link #mMap} is not null.
      */
     private void setUpMap() {
-       /* LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
         // Get the name of the best provider
+
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+
         String provider = locationManager.getBestProvider(criteria,true);
         Location location = locationManager.getLastKnownLocation(provider);
 
-        Location myLocation = locationManager.getLastKnownLocation(provider);
-
         // Get latitude of the current location
-        double latitude = myLocation.getLatitude();
-        // Get longitude of the current location
-        double longitude = myLocation.getLongitude();*/
+       latLng = new LatLng(location.getLatitude(),location.getLongitude());
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(new LatLng(latLng.latitude,latLng.longitude),15.5f,45f,0f)));
 
         //File f =new File("parking.json");
 
@@ -139,13 +186,63 @@ public class MapsActivity extends FragmentActivity {
 
                 parseur = new ParseurJson("parking.json", this.getResources().getAssets());
                 parseur.parse(mMap);
+            // Initialisation des variables
+            int position[] = new int[100];
+            int conte = 0;
 
+            PolygonOptions polygone = new PolygonOptions();
+
+
+            // Parcour la liste des idway
+            for(int m = 0; m < parseur.jsonIdWay.size(); m++){
+
+                // Parcour la liste des jsonIdWay22
+                for(int n = 0; n < parseur.jsonIdWay2.size(); n++){
+
+                    // Arret pour les id des polygones
+                    if(!(parseur.jsonIdWay.get(m).equals(new JsonPrimitive(-1)))){
+                        // Test si les id sont egaux
+                        if(parseur.jsonIdWay.get(m).equals(parseur.jsonIdWay2.get(n))){
+
+                            // Ajoute dans polygone les coordonnées d'un point
+                            polygone.add(new LatLng(parseur.jsonLatIdWay.get(n).getAsDouble(),parseur.jsonLonIdWay.get(n).getAsDouble()));
+                            // Stoque la position pour recuperer la position du 1ier point pour le polygone
+                            position[conte] = n;
+                            conte++;
+                            // Stop la boucle vu qu'il n'y a que des Id unique
+                            n = parseur.jsonIdWay2.size()-1;
+
+                        }
+                        // On est arrivé au dernier point du polygone
+                    }else if(parseur.jsonIdWay.get(m).equals(new JsonPrimitive(-1))){
+                        // On ajoute le 1ier point pour fermer le polygone
+                        polygone.add(new LatLng(parseur.jsonLatIdWay.get(position[0]).getAsDouble(),parseur.jsonLonIdWay.get(position[0]).getAsDouble()));
+
+                        // La couleur du polygone
+                        polygone.fillColor( ContextCompat.getColor(this, R.color.colorZoneParking));
+                        polygone.strokeColor( ContextCompat.getColor(this, R.color.colorZoneParkingFonce) );
+                        polygone.strokeWidth( 5 );
+
+                        mMap.addPolygon( polygone );
+
+                        // On cree un nouveau polygone, initialisation des variables
+                         polygone = new PolygonOptions();
+
+                        conte = 0;
+
+                        n = parseur.jsonIdWay2.size()-1;
+                    }
+
+                    //if du idway
+                }
+                //for du idway
+            }
         }catch (IOException e){
 
         }
 
-
-
+        //On dessine maintenant toutes les places dispo signalées
+        listPlaces.draw(mMap);
     }
 
     @Override
@@ -186,5 +283,25 @@ public class MapsActivity extends FragmentActivity {
         );
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        latLng= new LatLng(location.getLatitude(),location.getLongitude());
+    }
+
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String s) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
+
     }
 }
