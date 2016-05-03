@@ -18,18 +18,16 @@
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             app:popupTheme="@style/AppTheme.PopupOverlay" >
-            <SearchView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/searchView"
-                android:queryHint="Rechercher"
-                android:inputType="textAutoComplete|textPostalAddress" />
 
             <AutoCompleteTextView
                 android:id="@+id/autoComp"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:completionThreshold="3" />
+                android:completionThreshold="3"
+                android:ems="10"
+                android:autoText="true"
+                android:hint="Entrez une addresse" />
+            <requestFocus />
         </android.support.v7.widget.Toolbar>
 
     </android.support.design.widget.AppBarLayout>
