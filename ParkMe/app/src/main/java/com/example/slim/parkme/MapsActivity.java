@@ -4,6 +4,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
@@ -15,10 +17,16 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -27,6 +35,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
@@ -56,13 +65,13 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-public class MapsActivity extends FragmentActivity implements LocationListener,AdapterView.OnItemClickListener{
+public class MapsActivity extends FragmentActivity implements LocationListener,AdapterView.OnItemClickListener,NavigationView.OnNavigationItemSelectedListener{
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private Button search;
     private EditText recherche;
-    private String pseudo;
     private int Score;
     private Button test;
 
@@ -70,8 +79,16 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
     private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place";
     private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
     private static final String OUT_JSON = "/json";
+    protected  static String pseudo, email;
+    private static final String API_KEY = "AIzaSyBVBa2qxyBAjiuqJQEXY43LLbcAR-_pNZk";
 
-    private static final String API_KEY = "AIzaSyAU9ShujnIg3IDQxtPr7Q1qOvFVdwNmWc4";
+    final String[] fragments ={
+            "com.example.slim.parkme.Profil",
+            "com.example.slim.parkme.MapsActivity",
+            "com.example.slim.parkme.Commentaire",
+            "com.example.slim.parkme.Parametres",
+            "com.example.slim.parkme.Deconnexion"};
+
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -86,16 +103,19 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
     AlertDialog.Builder helpBuilder;
     ParseurJson parseur;
     Resources resources;
-    AutoCompleteTextView autoComp;
     /**
      * Boutton pour signaler une place
      */
     FloatingActionButton signPlace;
+    FloatingActionButton refresh;
 
     /**
      * Listes des places
      */
-    ListPlaces listPlaces;
+    static ListPlaces listPlaces;
+
+    RecupBD recupBD;
+    EnvoiePlace envoieP;
 
     ArrayList<Adress> listAddress;
 
@@ -103,9 +123,21 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_drawer);
 
         listPlaces = new ListPlaces();
+
+        pseudo = getIntent().getStringExtra("name");
+        email = getIntent().getStringExtra("email");
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+
+        View header = navigationView.getHeaderView(0);
+        TextView pseudoDrawerTV = (TextView) header.findViewById(R.id.pseudoDrawer);
+        TextView mailDrawerTV = (TextView) header.findViewById(R.id.mailDrawer);
+
+        pseudoDrawerTV.setText("Bienvenue "+pseudo);
+        mailDrawerTV.setText(email);
 
         final AutoCompleteTextView autoCompView = (AutoCompleteTextView) findViewById(R.id.autoComp);
 
@@ -115,14 +147,36 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
         setUpMapIfNeeded();
 
         signPlace =(FloatingActionButton) findViewById(R.id.fab);
+        refresh =(FloatingActionButton) findViewById(R.id.fabRefresh);
+
+        final Context c = this;
+
+        //Récuperation des places depuis la base de données
+        recupBD = new RecupBD(listPlaces);
+
+        //recupBD.b.execute();
 
         signPlace.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                listPlaces.add(new Place(latLng,1));
+                if(!listPlaces.add2(new Place(latLng,"1")))
+                    Toast.makeText(c,"Place déja signalée",Toast.LENGTH_LONG).show();
                 listPlaces.draw(mMap);
+                envoieP = new EnvoiePlace(new Place(latLng,pseudo));
             }
         });
+
+        refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mMap.clear();
+                //listPlaces=recupBD.listPlaces;
+                //System.out.println(listPlaces.get(0).getLatlong().toString()+"  "+listPlaces.get(0).getFiabilité());
+                listPlaces.draw(mMap);
+                dessineParking();
+            }
+        });
+
         resources=this.getResources();
 
 //        final String addresse = recherche.toString();
@@ -137,8 +191,11 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
             public void onFinish() {
                 mMap.clear();
                 dessineParking();
-                listPlaces.updateFiab();
+
+                recupBD = new RecupBD(listPlaces);
                 listPlaces.draw(mMap);
+                //recupBD.b.execute();
+
                 this.start();
             }
         }.start();
@@ -148,6 +205,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
         // See https://g.co/AppIndexing/AndroidStudio for more information.
 
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
     }
 
     @Override
@@ -197,6 +255,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
             parseur.parse(mMap);
             // Initialisation des variables
             int position[] = new int[100];
+            double[] centroid = { 0.0, 0.0 };
             int conte = 0;
 
             PolygonOptions polygone = new PolygonOptions();
@@ -218,6 +277,9 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
                             // Stoque la position pour recuperer la position du 1ier point pour le polygone
                             position[conte] = n;
                             conte++;
+                            	/* pour calculer le marqueur au centre du polygone */
+                            centroid[0] += parseur.jsonLatIdWay.get(n).getAsDouble();
+                            centroid[1] += parseur.jsonLonIdWay.get(n).getAsDouble();
                             // Stop la boucle vu qu'il n'y a que des Id unique
                             n = parseur.jsonIdWay2.size()-1;
 
@@ -237,9 +299,23 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
                         // On cree un nouveau polygone, initialisation des variables
                         polygone = new PolygonOptions();
 
-                        conte = 0;
 
+						/* calcule le centre  */
+                        centroid[0] = centroid[0] / conte;
+                        centroid[1] = centroid[1] / conte;
+
+                        conte = 0;
                         n = parseur.jsonIdWay2.size()-1;
+
+                        /* ajoute le marqueur au centre du polygone avec l'image P */
+                        Bitmap b= BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("p", "drawable", getPackageName()));
+                        Bitmap resized = Bitmap.createScaledBitmap(b, 50, 50, false);
+                        mMap.addMarker((new MarkerOptions().title("Parking exterieur").position(new LatLng(centroid[0],centroid[1])).icon(BitmapDescriptorFactory.fromBitmap(resized))));
+
+
+					/* remet a 0 pour le prochain marqueur */
+                        centroid[0] = 0;
+                        centroid[1] = 0;
                     }
 
                     //if du idway
@@ -413,7 +489,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
             sb.append("?key=" + API_KEY);
             sb.append("&components=country:fr");
             sb.append("&input=" + URLEncoder.encode(input, "utf8"));
-            System.out.println(sb);
+
 
             URL url = new URL(sb.toString());
             conn = (HttpURLConnection) url.openConnection();
@@ -456,6 +532,36 @@ public class MapsActivity extends FragmentActivity implements LocationListener,A
 
 
         return resultList;
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+
+        FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
+
+        if (id == R.id.nav_profile) {
+            Intent profil = new Intent(MapsActivity.this, Profil.class);
+            startActivity(profil);
+        } else if(id == R.id.nav_map){
+            Intent profil = new Intent(MapsActivity.this, MapsActivity.class);
+            startActivity(profil);
+        } else if(id == R.id.nav_commentaire){
+            Intent profil = new Intent(MapsActivity.this, Commentaire.class);
+            startActivity(profil);
+        } else if(id == R.id.nav_parametre){
+            Intent param = new Intent(MapsActivity.this, Parametres.class);
+            startActivity(param);
+        }
+        else if (id == R.id.nav_deconnexion) {
+            Intent deco = new Intent(MapsActivity.this, Deconnexion.class);
+            startActivity(deco);
+        }
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
     }
 
     class GooglePlacesAutocompleteAdapter extends ArrayAdapter implements Filterable {

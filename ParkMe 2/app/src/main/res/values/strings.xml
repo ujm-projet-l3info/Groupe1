@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">ParkMe</string>
+    <string name="title_activity_maps">Park-Me</string>
+    <string name="Hello">IVI</string>
+    <string name="connexion">connexion</string>
+    <string name="Send">Send</string>
+    <string name="app_name_con">EspaceConnexion</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="identifiant">Identifiant</string>
+    <string name="login">Login</string>
+    <string name="passe">Mot de passe</string>
+    <string name="identifier">Se connecter</string>
+    <string name="quitter">Quitter</string>
+</resources>
