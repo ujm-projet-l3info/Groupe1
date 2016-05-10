@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "826615001603",
+    "project_id": "parkme-b378f"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:826615001603:android:faec17a4b9541b2c",
+        "android_client_info": {
+          "package_name": "com.example.slim.parkme"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "826615001603-44np166f9duso7h4crd9kd7i8ie0s0sg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.slim.parkme",
+            "certificate_hash": "3B4F573867A75CBABA4CB3E744A2FB299EB29B56"
+          }
+        },
+        {
+          "client_id": "826615001603-kbna746da9t4dr8duts409qm9je4fj57.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVBa2qxyBAjiuqJQEXY43LLbcAR-_pNZk"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
